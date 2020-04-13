@@ -7,6 +7,7 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 use function request;
 
@@ -81,11 +82,12 @@ class ApiAuthController extends Controller
     public function getUserCreateValidator(): array
     {
         $valid_request = request()->validate([
-            'first_name' => ['required'],
-            'last_name' => ['required'],
+            'first_name' => ['required','min:2'],
+            'last_name' => ['required','min:2'],
             'password' => ['required', 'min:8', 'confirmed'],
             'phone_number' => ['required'],
-            'user_name' => ['sometimes', 'required', 'unique:users,user_name'],
+            'status'=>['sometimes','required',Rule::in(['active','inactive'])],
+            'user_name' => ['sometimes', 'required', 'unique:users,user_name','min:3'],
             'email' => ['sometimes', 'required', 'email', 'unique:users,email'],
             'alternative_phone_number' => ['sometimes', 'required'],
             'role' => 'required',

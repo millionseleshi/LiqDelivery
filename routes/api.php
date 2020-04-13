@@ -39,7 +39,12 @@ Route::group(['namespace' => 'Api'], function () {
     Route::post('/signup', 'ApiAuthController@signup');
     Route::post('/signin', 'ApiAuthController@signin');
     Route::get('/signout', 'ApiAuthController@signout')->middleware('auth:api');
-    Route::get('/user', 'ApiAuthController@user')->middleware('auth:api');
+    Route::get('/auth', 'ApiAuthController@user')->middleware('auth:api');
+    Route::get('/users','UserController@index');
+    Route::get('/users/{id}','UserController@show');
+    Route::put('/users/{user}','UserController@update');
+    Route::delete('/users/{id}','UserController@destroy');
+
 });
 
 

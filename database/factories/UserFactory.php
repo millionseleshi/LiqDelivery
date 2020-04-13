@@ -27,9 +27,10 @@ $factory->define(User::class, function (Faker $faker) {
         'user_name' => $faker->userName,
         'email' => $faker->email,
         'password' =>  $faker->password,
+        'status'=>$faker->randomElement(array('active','inactive')),
         'phone_number' => Str::slug('09' . $faker->phoneNumber),
         'alternative_phone_number' => $faker->phoneNumber,
-        'role' => $faker->randomElement(array('customer', 'deliverer', 'officeworker')),
+        'role' => $faker->randomElement(array('customer', 'deliverer', 'officeworker','admin')),
         'address_id' => Address::first()->id,
     ];
 });
