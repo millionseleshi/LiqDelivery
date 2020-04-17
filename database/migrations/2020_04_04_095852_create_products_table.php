@@ -18,6 +18,8 @@ class CreateProductsTable extends Migration
             $table->id();
             $table->string('product_name')->nullable(false)->unique('product_name_index');
             $table->string('product_description')->nullable(true);
+            $table->string('sku');
+            $table->unsignedInteger('units_in_stock');
             $table->string('product_image')->nullable(true);
             $table->integer('price_per_unit')->nullable(false)->unsigned();
             $table->unsignedBigInteger('category_id');

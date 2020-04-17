@@ -7,6 +7,7 @@ use App\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -47,17 +48,24 @@ class UserController extends Controller
      */
     public function update(User $user)
     {
-        $this->getUpdateValidater($user);
-        $user->update(\request()->all());
-        return new JsonResponse($user, Response::HTTP_OK);
+       if($this->getUpdateValidate($user)->fails())
+       {
+          $errors= $this->getUpdateValidate($user)->errors();
+           return new JsonResponse($errors,Response::HTTP_UNPROCESSABLE_ENTITY);
+       }
+       else{
+           $user->update(\request()->all());
+           return new JsonResponse($user, Response::HTTP_OK);
+       }
+
     }
 
     /**
      * @param User $user
      */
-    public function getUpdateValidater(User $user): void
+    public function getUpdateValidate(User $user)
     {
-        \request()->validate([
+         $validator=Validator::make(\request()->all(),[
             'first_name' => ['sometimes', 'required', 'min:2'],
             'last_name' => ['sometimes', 'required', 'min:2'],
             'phone_number' => ['sometimes', 'required'],
@@ -68,6 +76,8 @@ class UserController extends Controller
                 Rule::unique('users')->ignore($user->id)],
             'alternative_phone_number' => ['sometimes', 'required'],
         ]);
+
+         return $validator;
     }
 
     /**
@@ -79,7 +89,7 @@ class UserController extends Controller
     public function destroy($id)
     {
         try
-        {
+        {  User::findOrFail($id);
             User::destroy($id);
             return new  JsonResponse("user deleted",Response::HTTP_OK);
         }

@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Category;
 use App\Product;
-use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Http\UploadedFile;
@@ -14,8 +13,7 @@ use Tests\TestCase;
 
 class ProductControllerTest extends TestCase
 {
-    use RefreshDatabase;
-    use WithFaker;
+    use RefreshDatabase, WithFaker;
 
 
     /**
@@ -27,46 +25,57 @@ class ProductControllerTest extends TestCase
     public function testCreateProduct()
     {
         $this->withoutExceptionHandling();
-        $response = $this->post('/api/products', $this->getData(), ['Accept' => 'application/json']);
-        $product = Product::all();
-        $this->assertCount(1, $product);
-        $response->assertStatus(201);
-        $this->assertJson($product);
+        $response = $this->post('/api/products', $this->getData());
+        $this->assertCount(1, Product::all());
+
     }
 
     /**
      * @return array
      * @throws Exception
      */
-    public function getData(): array
+    public function getData()
     {
-        $category = factory(Category::class)->create();
+        factory(Category::class)->create();
         return [
-            'product_name' => $this->faker->name(),
-            'product_description' => $this->faker->paragraph(),
+            'product_name' => $this->faker->name,
+            'product_description' => $this->faker->paragraph,
+            'sku'=>$this->faker->word,
+            'units_in_stock'=>random_int(200,20000),
             'product_image' => UploadedFile::fake()->image('tests/stubs/images.jpg', 256, 197),
             'price_per_unit' => random_int(1, 1000),
-            'category_id' => $category->id
+            'category_id' => '1'
         ];
     }
 
     public function testProductNameIsRequired()
     {
         $response = $this->post('/api/products', array_merge($this->getData(), ['product_name' => '']));
-        $response->assertSessionHasErrors(['product_name']);
+        $response->assertStatus(422);
     }
 
     public function testPricePerUnitIsRequired()
     {
         $response = $this->post('/api/products', array_merge($this->getData(), ['price_per_unit' => '']));
-        $response->assertSessionHasErrors(['price_per_unit']);
+        $response->assertStatus(422);
+    }
+
+    public function testUnitInStockIsRequired()
+    {
+        $response = $this->post('/api/products', array_merge($this->getData(), ['units_in_stock' => '']));
+        $response->assertStatus(422);
+    }
+    public function testSKURequired()
+    {
+        $response = $this->post('/api/products', array_merge($this->getData(), ['sku' => '']));
+        $response->assertStatus(422);
     }
 
     public function testProductNameUniqueness()
     {
-        $response_one = $this->post('/api/products', array_merge($this->getData(), ['product_name' => 'car']));
+        $this->post('/api/products', array_merge($this->getData(), ['product_name' => 'car']));
         $response_two = $this->post('/api/products', array_merge($this->getData(), ['product_name' => 'car']));
-        $response_two->assertSessionHasErrors(['product_name']);
+        $response_two->assertStatus(422);
     }
 
     public function testProductImageUpload()
@@ -79,18 +88,18 @@ class ProductControllerTest extends TestCase
     public function testCategoryIdIsRequired()
     {
         $response = $this->post('/api/products', array_merge($this->getData(), ['category_id' => '']));
-        $response->assertSessionHasErrors(['category_id']);
+        $response->assertStatus(422);
     }
 
     public function testCategoryIdExistsInCategoriesTable()
     {
         $response = $this->post('/api/products', array_merge($this->getData(), ['category_id' => $this->faker->randomDigit]));
-        $response->assertSessionHasErrors(['category_id']);
+        $response->assertStatus(422);
     }
 
     public function testUpdateProduct()
     {
-
+        $this->withoutExceptionHandling();
         $this->post('/api/products', $this->getData(), ['Accept' => 'application/json']);
 
         $product = Product::first();
@@ -114,7 +123,7 @@ class ProductControllerTest extends TestCase
     public function testProductNotFound()
     {
         $response = $this->get('/api/products/' . $this->faker->randomDigit);
-        $response->assertStatus(404);
+        $response->assertStatus(422);
         $response->assertExactJson(['product not found']);
     }
 

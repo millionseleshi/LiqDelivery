@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Product;
 use App\Traits\UploadTrait;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\Response as ResponseAlias;
+use Illuminate\Http\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class ProductController extends Controller
 {
@@ -24,7 +24,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return new JsonResponse(Product::all(), 200);
+        return new JsonResponse(Product::all(),Response::HTTP_OK);
     }
 
     /**
@@ -35,23 +35,28 @@ class ProductController extends Controller
      */
     public function store()
     {
-        $this->getProductValidator()->validate();
-
-        $product = $this->getProductRequest();
-        $created_product = Product::create($product);
-        return new JsonResponse($created_product, ResponseAlias::HTTP_CREATED);
+        if ($this->getProductValidator()->fails()) {
+            $errors = $this->getProductValidator()->errors();
+            return new JsonResponse($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+        } else {
+            $product_image=$this->getProductRequest();
+            $product = Product::create(array_merge(request()->all(),$product_image));
+            return new JsonResponse($product, Response::HTTP_OK);
+        }
 
     }
 
     /**
      * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function getProductValidator(): \Illuminate\Contracts\Validation\Validator
+    public function getProductValidator()
     {
         $validator = Validator::make(\request()->all(), [
             'product_name' => ['required', 'unique:products,product_name'],
-            'product_description' => ['sometimes', 'required', 'string'],
+            'product_description' => ['nullable'],
             'product_image' => ['sometimes', 'required', 'image', 'mimes:jpeg,png,jpg,gif,svg,', 'max:2048'],
+            'sku'=>['required'],
+            'units_in_stock'=>['required','numeric'],
             'price_per_unit' => ['required', 'numeric', 'min:0'],
             'category_id' => ['required', 'exists:categories,id']
         ]);
@@ -61,7 +66,7 @@ class ProductController extends Controller
     /**
      * @return array
      */
-    public function getProductRequest(): array
+    public function getProductRequest()
     {
         $product = \request()->all();
         if (request()->has('product_image')) {
@@ -85,9 +90,9 @@ class ProductController extends Controller
     {
         try {
             $product = Product::findOrFail($id);
-            return new JsonResponse($product, ResponseAlias::HTTP_OK);
+            return new JsonResponse($product, Response::HTTP_OK);
         } catch (ModelNotFoundException $exception) {
-            return new JsonResponse("product not found", ResponseAlias::HTTP_NOT_FOUND);
+            return new JsonResponse("product not found", Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     }
 
@@ -100,15 +105,17 @@ class ProductController extends Controller
      */
     public function update(Product $product)
     {
-        $validator = $this->getUpdateValidator($product);
 
-        $validator->validate();
-
-        if ($product->getAttribute('product_image') != null) {
-            $this->getProductRequest();
+        if ($this->getUpdateValidator($product)->fails()) {
+            $errors = $this->getUpdateValidator($product)->errors();
+            return new JsonResponse($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
+        } else {
+            if ($product->getAttribute('product_image') != null) {
+                $this->getProductRequest();
+            }
+            $product->update(\request()->all());
+            return new JsonResponse($product, Response::HTTP_OK);
         }
-        $product->update(\request()->all());
-        return new JsonResponse($product, ResponseAlias::HTTP_OK);
     }
 
     /**
@@ -120,6 +127,8 @@ class ProductController extends Controller
         $validator = Validator::make(\request()->all(), [
             'product_name' => ['sometimes', 'required', Rule::unique('products')->ignore($product->id)],
             'product_description' => ['sometimes', 'required', 'string'],
+            'sku'=>['sometimes','required'],
+            'units_in_stock'=>['sometimes','required','numeric'],
             'product_image' => ['sometimes', 'required', 'image', 'mimes:jpeg,png,jpg,gif,svg,', 'max:2048'],
             'price_per_unit' => ['sometimes', 'required', 'numeric', 'min:0'],
             'category_id' => ['sometimes', 'required', 'exists:categories,id']
@@ -136,10 +145,11 @@ class ProductController extends Controller
     public function destroy($id)
     {
         try {
+            Product::findOrFail($id);
             Product::destroy($id);
-            return new JsonResponse('product deleted', ResponseAlias::HTTP_OK);
+            return new JsonResponse('product deleted', Response::HTTP_OK);
         } catch (ModelNotFoundException $exception) {
-            return new JsonResponse("product not found", ResponseAlias::HTTP_NOT_FOUND);
+            return new JsonResponse("product not found", Response::HTTP_NOT_FOUND);
         }
     }
 }

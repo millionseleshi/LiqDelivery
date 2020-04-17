@@ -7,6 +7,7 @@ use App\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
 use function request;
@@ -64,46 +65,52 @@ class ApiAuthController extends Controller
 
     public function signup()
     {
-        $valid_request = $this->getUserCreateValidator();
+        $user_request = $this->getUserCreateValidator();
+        if ($user_request->fails()) {
+            return new JsonResponse($user_request->errors(), Response::HTTP_UNPROCESSABLE_ENTITY);
+        } else {
+            $user = User::create(array_merge(request()->all(),
+                ['password' => bcrypt(request('password'))]
+            ));
+            $success['access_token'] = $user->createToken('user token')->accessToken;
+            $success['token_type'] = "Bearer ";
+            $success['message'] = "user created";
 
-        $user = User::create(array_merge($valid_request,
-            ['password' => bcrypt(request('password'))]
-        ));
-        $success['access_token'] = $user->createToken('user token')->accessToken;
-        $success['token_type'] = "Bearer ";
-        $success['message'] = "user created";
+            return new JsonResponse($success, Response::HTTP_CREATED);
 
-        return new JsonResponse($success, Response::HTTP_CREATED);
+        }
+
+
     }
 
     /**
-     * @return array
+     * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function getUserCreateValidator(): array
+    public function getUserCreateValidator()
     {
-        $valid_request = request()->validate([
-            'first_name' => ['required','min:2'],
-            'last_name' => ['required','min:2'],
+        $user_request = Validator::make(request()->all(), [
+            'first_name' => ['required', 'min:2'],
+            'last_name' => ['required', 'min:2'],
             'password' => ['required', 'min:8', 'confirmed'],
             'phone_number' => ['required'],
-            'status'=>['sometimes','required',Rule::in(['active','inactive'])],
-            'user_name' => ['sometimes', 'required', 'unique:users,user_name','min:3'],
+            'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
+            'user_name' => ['sometimes', 'required', 'unique:users,user_name', 'min:3'],
             'email' => ['sometimes', 'required', 'email', 'unique:users,email'],
             'alternative_phone_number' => ['sometimes', 'required'],
             'role' => 'required',
             'address_id' => ['sometimes', 'required'],
         ]);
-        return $valid_request;
+        return $user_request;
     }
 
     public function signout()
     {
         request()->user()->token()->revoke();
-       return new JsonResponse('successfully logged out', Response::HTTP_OK);
+        return new JsonResponse('successfully logged out', Response::HTTP_OK);
     }
 
     public function user()
     {
-        return new JsonResponse(request()->user(),Response::HTTP_OK);
+        return new JsonResponse(request()->user(), Response::HTTP_OK);
     }
 }

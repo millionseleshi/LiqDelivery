@@ -32,6 +32,8 @@ class ProductTest extends TestCase
         $category = factory(Category::class)->create();
         Product::create([
             'product_name' => $this->faker->name,
+            'sku' => $this->faker->word,
+            'units_in_stock' => random_int(20, 2000),
             'price_per_unit' => random_int(1, 1000),
             'category_id' => $category->id
         ]);

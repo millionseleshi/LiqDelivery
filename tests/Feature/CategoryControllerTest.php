@@ -39,14 +39,14 @@ class CategoryControllerTest extends TestCase
     public function testCategoryNameIsRequired()
     {
         $response = $this->post('/api/categories', array_merge($this->getCategory(), ['category_name' => '']));
-        $response->assertSessionHasErrors(['category_name']);
+        $response->assertStatus(422);
     }
 
     public function testCategoryNameIsUnique()
     {
         $this->post('/api/categories', array_merge($this->getCategory(), ['category_name' => 'tech']));
         $response = $this->post('/api/categories', array_merge($this->getCategory(), ['category_name' => 'tech']));
-        $response->assertSessionHasErrors(['category_name']);
+        $response->assertStatus(422);
     }
 
     public function testUpdateCategory()

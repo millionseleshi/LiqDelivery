@@ -17,13 +17,13 @@ class CreateAddressesTable extends Migration
             $table->id();
             $table->string('longitude')->nullable(false);
             $table->string('latitude')->nullable(false);
-            $table->string('city');
-            $table->string('subcity');
-            $table->string('postal_code');
-            $table->string('woreda');
-            $table->string('kebela');
-            $table->string('houseno');
-            $table->string('special_name');
+            $table->string('city')->nullable(true);
+            $table->string('subcity')->nullable(true);
+            $table->string('postal_code')->nullable(true);
+            $table->string('woreda')->nullable(true);
+            $table->string('kebela')->nullable(true);
+            $table->string('houseno')->nullable(true);
+            $table->string('special_name')->nullable(true);
             $table->timestamps();
         });
     }

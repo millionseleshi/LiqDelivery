@@ -43,13 +43,13 @@ class AddressControllerTest extends TestCase
     {
 
         $response = $this->post('/api/addresses', array_merge($this->getAddress(), ['longitude' => '']));
-        $response->assertSessionHasErrors(['longitude']);
+        $response->assertStatus(422);
     }
 
     public function testLatitudeIsRequired()
     {
         $response = $this->post('/api/addresses', array_merge($this->getAddress(), ['latitude' => '']));
-        $response->assertSessionHasErrors(['latitude']);
+        $response->assertStatus(422);
     }
 
     public function testAddressUpdate()

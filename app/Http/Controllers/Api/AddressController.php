@@ -7,7 +7,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\Response;
+
 
 class AddressController extends Controller
 {
@@ -24,33 +26,40 @@ class AddressController extends Controller
     /**
      * Store a newly created resource in storage.
      *
-     * @param Request $request
+     *
      * @return JsonResponse
      */
     public function store()
     {
-        $valid_request = $this->getAddressValidator();
-        $address = Address::create($valid_request);
-        return new JsonResponse($address, Response::HTTP_CREATED);
+        if($this->getAddressValidator()->fails())
+        {
+            $errors=$this->getAddressValidator()->errors();
+            return new JsonResponse($errors,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        else{
+            $address = Address::create(\request()->all());
+            return new JsonResponse($address, Response::HTTP_CREATED);
+        }
+
     }
 
     /**
-     * @return array
+     * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function getAddressValidator(): array
+    public function getAddressValidator()
     {
-        $valid_request = \request()->validate([
+        $address_request = Validator::make(request()->all(),[
             'longitude' => 'required',
             'latitude' => 'required',
-            'city' => 'sometimes|required',
-            'postal_code' => 'sometimes|required',
-            'subcity' => 'sometimes|required',
-            'woreda' => 'sometimes|required',
-            'kebela' => 'sometimes|required',
-            'houseno' => 'sometimes|required',
-            'special_name' => 'sometimes|required'
+            'city' => ['sometimes','required'],
+            'postal_code' => ['sometimes','required'],
+            'subcity' =>['sometimes','required'],
+            'woreda' => ['sometimes','required'],
+            'kebela' =>['sometimes','required'],
+            'houseno' => ['sometimes','required'],
+            'special_name' =>['sometimes','required'],
         ]);
-        return $valid_request;
+        return $address_request;
     }
 
     /**
@@ -78,17 +87,25 @@ class AddressController extends Controller
      */
     public function update(Address $address)
     {
-        $valid_request = $this->getUpdateAddressValidator();
-        $updated_product = $address->update($valid_request);
-        return new JsonResponse($updated_product, Response::HTTP_OK);
+
+         if($this->getUpdateAddressValidator()->fails())
+         {
+             $errors=$this->getUpdateAddressValidator()->errors();
+             return new JsonResponse($errors,Response::HTTP_UNPROCESSABLE_ENTITY);
+         }
+         else
+         {   $address->update(\request()->all());
+             return new JsonResponse($address, Response::HTTP_OK);
+         }
+
     }
 
     /**
-     * @return array
+     * @return \Illuminate\Contracts\Validation\Validator
      */
-    public function getUpdateAddressValidator(): array
+    public function getUpdateAddressValidator()
     {
-        $valid_request = \request()->validate([
+        $validator = Validator::make(\request()->all(),[
             'longitude' => 'sometimes|required',
             'latitude' => 'sometimes|required',
             'city' => 'sometimes|required',
@@ -99,7 +116,7 @@ class AddressController extends Controller
             'houseno' => 'sometimes|required',
             'special_name' => 'sometimes|required'
         ]);
-        return $valid_request;
+        return $validator;
     }
 
     /**
